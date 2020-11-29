@@ -16,3 +16,7 @@ test_run_dir
 *~
 \#*\#
 .\#*
+
+.bloop/**
+.metals/**
+project/**

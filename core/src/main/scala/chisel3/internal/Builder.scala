@@ -12,6 +12,8 @@ import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleNa
 import chisel3.internal.Builder.Prefix
 
 import scala.collection.mutable
+import scala.collection.mutable.HashSet
+import chisel3.internal.sourceinfo.SourceInfo
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()
@@ -323,6 +325,7 @@ private[chisel3] class DynamicContext() {
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   var currentModule: Option[BaseModule] = None
+  val addedPrints = HashSet[String]()
 
   /** Contains a mapping from a elaborated module to their aspect
     * Set by [[ModuleAspect]]
@@ -524,6 +527,19 @@ private[chisel3] object Builder {
   // However, rest of frontend can't support this yet.
   def pushCommand[T <: Command](c: T): T = {
     forcedUserModule.addCommand(c)
+
+    if (!c.isInstanceOf[Printf] && 
+        !c.isInstanceOf[WhenBegin] && 
+        !c.isInstanceOf[WhenEnd] && 
+        !c.isInstanceOf[AltBegin] && 
+        !c.isInstanceOf[OtherwiseEnd] &&
+        !dynamicContext.addedPrints(c.sourceInfo.toString())) {
+        dynamicContext.addedPrints += c.sourceInfo.toString()
+        val pable = Printable.pack("Cov: " + c.sourceInfo.toString() + "\n")
+        val clock = Builder.forcedClock
+        pushCommand(Printf(c.sourceInfo, clock.ref, pable))
+    }
+
     c
   }
   def pushOp[T <: Data](cmd: DefPrim[T]): T = {
