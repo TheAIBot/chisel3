@@ -26,6 +26,14 @@ object TesterDriver extends BackendCompilationUtilities {
     // For now, dump the IR out to a file
     Driver.dumpFirrtl(circuit, Some(new File(fname.toString + ".fir")))
 
+    val chirrtlFile = scala.io.Source.fromFile(fname.toString + ".fir")
+    val chirrtlString = try chirrtlFile.mkString finally chirrtlFile.close()
+
+    val firCircuit = firrtl.Parser.parse(chirrtlString)
+    val hifirrtlFile = new FileWriter(new File(fname.toString + ".hi.fir"))
+    hifirrtlFile write (new firrtl.ChirrtlToHighFirrtl).execute((firrtl.CircuitState(firCircuit, firrtl.ChirrtlForm))).circuit.serialize
+    hifirrtlFile.close
+
     // Copy CPP harness and other Verilog sources from resources into files
     val cppHarness =  new File(path, "top.cpp")
     copyResourceToFile("/chisel3/top.cpp", cppHarness)

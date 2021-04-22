@@ -59,8 +59,8 @@ object Counter
   @chiselName
   def apply(cond: Bool, n: Int): (UInt, Bool) = {
     val c = new Counter(n)
-    var wrap: Bool = null
-    when (cond) { wrap = c.inc() }
-    (c.value, cond && wrap)
+    val wrap = WireInit(false.B)
+    when (cond) { wrap := c.inc() }
+    (c.value, wrap)
   }
 }
